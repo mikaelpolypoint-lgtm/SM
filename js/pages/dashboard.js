@@ -126,6 +126,8 @@ export async function renderDashboard(container, pi) {
 }
 
 function renderTableBody(sprints, developers, attrField, getSprintCapacity, getDevAttrs) {
+    const format = (n) => attrField === 'dailySP' ? n.toFixed(1) : Math.round(n);
+
     let rowsHtml = '';
 
     // Totals per dev
@@ -152,12 +154,15 @@ function renderTableBody(sprints, developers, attrField, getSprintCapacity, getD
             devTotals[dev.key] += val;
             if (!isIpSprint) devTotalsNoIP[dev.key] += val;
 
-            rowTotal += val;
+            if (!dev.specialCase) {
+                rowTotal += val;
+            }
 
-            rowHtml += `<td>${Math.round(val)}</td>`;
+            const style = dev.specialCase ? 'color: var(--danger); font-weight: bold;' : '';
+            rowHtml += `<td style="${style}">${format(val)}</td>`;
         });
 
-        rowHtml += `<td><strong>${Math.round(rowTotal)}</strong></td></tr>`;
+        rowHtml += `<td><strong>${format(rowTotal)}</strong></td></tr>`;
         rowsHtml += rowHtml;
     });
 
@@ -165,19 +170,25 @@ function renderTableBody(sprints, developers, attrField, getSprintCapacity, getD
     let totalRow = `<tr style="background: rgba(59, 130, 246, 0.1); font-weight: bold;"><td>Total</td>`;
     let grandTotal = 0;
     developers.forEach(dev => {
-        totalRow += `<td>${Math.round(devTotals[dev.key])}</td>`;
-        grandTotal += devTotals[dev.key];
+        const style = dev.specialCase ? 'color: var(--danger);' : '';
+        totalRow += `<td style="${style}">${format(devTotals[dev.key])}</td>`;
+        if (!dev.specialCase) {
+            grandTotal += devTotals[dev.key];
+        }
     });
-    totalRow += `<td>${Math.round(grandTotal)}</td></tr>`;
+    totalRow += `<td>${format(grandTotal)}</td></tr>`;
 
     // Ohne IP Row
     let noIpRow = `<tr style="background: rgba(16, 185, 129, 0.1); font-weight: bold;"><td>Ohne IP</td>`;
     let grandTotalNoIP = 0;
     developers.forEach(dev => {
-        noIpRow += `<td>${Math.round(devTotalsNoIP[dev.key])}</td>`;
-        grandTotalNoIP += devTotalsNoIP[dev.key];
+        const style = dev.specialCase ? 'color: var(--danger);' : '';
+        noIpRow += `<td style="${style}">${format(devTotalsNoIP[dev.key])}</td>`;
+        if (!dev.specialCase) {
+            grandTotalNoIP += devTotalsNoIP[dev.key];
+        }
     });
-    noIpRow += `<td>${Math.round(grandTotalNoIP)}</td></tr>`;
+    noIpRow += `<td>${format(grandTotalNoIP)}</td></tr>`;
 
     return rowsHtml + totalRow + noIpRow;
 }

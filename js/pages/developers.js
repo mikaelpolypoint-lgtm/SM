@@ -54,6 +54,7 @@ export async function renderDevelopers(container, pi) {
                                 <th>Action</th>
                                 <th>Team</th>
                                 <th>Key (3)</th>
+                                <th>Specialcase</th>
                                 <th>Daily Hours</th>
                                 <th>Load %</th>
                                 <th>Manage %</th>
@@ -150,6 +151,7 @@ function renderRow(dev) {
                 </select>
             </td>
             <td><input type="text" name="key" value="${dev.key || ''}" maxlength="3" class="dev-input" style="width: 50px;"></td>
+            <td><input type="checkbox" name="specialCase" ${dev.specialCase ? 'checked' : ''} class="dev-input"></td>
             <td><input type="number" name="dailyHours" value="${dev.dailyHours || 8}" class="dev-input" style="width: 60px;"></td>
             <td><input type="number" name="load" value="${dev.load || 90}" class="dev-input" style="width: 60px;"></td>
             <td><input type="number" name="manageRatio" value="${dev.manageRatio || 0}" class="dev-input" style="width: 60px;"></td>
@@ -169,7 +171,7 @@ function renderRow(dev) {
 function addNewRow(pi) {
     const tbody = document.querySelector('#dev-table tbody');
     const newDev = {
-        team: 'Neon', key: '',
+        team: 'Neon', key: '', specialCase: false,
         dailyHours: 8, load: 90, manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1
     };
     // We don't save yet, just append UI. User must fill Key to save.
@@ -193,6 +195,7 @@ async function handleInputChange(input, pi) {
     const dev = {
         key: key,
         team: row.querySelector('select[name="team"]').value,
+        specialCase: row.querySelector('input[name="specialCase"]').checked,
         dailyHours: row.querySelector('input[name="dailyHours"]').value,
         load: row.querySelector('input[name="load"]').value,
         manageRatio: row.querySelector('input[name="manageRatio"]').value,
@@ -234,7 +237,7 @@ function exportDevelopers(developers) {
 
 function exportDevelopersCSV(developers) {
     // Select only relevant fields
-    const fields = ['team', 'key', 'dailyHours', 'load', 'manageRatio', 'developRatio', 'maintainRatio', 'velocity'];
+    const fields = ['team', 'key', 'specialCase', 'dailyHours', 'load', 'manageRatio', 'developRatio', 'maintainRatio', 'velocity'];
     const csv = Papa.unparse({
         fields: fields,
         data: developers.map(d => {
