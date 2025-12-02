@@ -25,37 +25,30 @@
     --performance-management: #f1b600;
     --documentation: #c17f0a;
 
-    /* Theme Mapping (Light Theme Base with Dark Sidebar) */
-    --bg-body: #f8f9fa;
-    /* Light Grey/White */
-    --bg-sidebar: #243382;
-    /* Polypoint Darkblue */
-    --bg-card: #ffffff;
-    --bg-card-hover: #f1f5f9;
+    /* Theme Mapping (Light Theme Base with Light Sidebar) */
+    --bg-body: #ffffff;
+    --bg-sidebar: #ffffff;
+    --bg-card: #f8f9fa;
+    --bg-card-hover: #ffffff;
 
     --text-primary: #1e293b;
-    /* Dark Slate for text on light bg */
     --text-secondary: #64748b;
-    /* Slate Grey */
-    --text-sidebar: #ffffff;
-    /* White text on dark sidebar */
-    --text-sidebar-secondary: rgba(255, 255, 255, 0.7);
+    --text-sidebar: #243382;
+    /* Polypoint Darkblue */
+    --text-sidebar-secondary: #64748b;
 
-    --accent: #d6272c;
-    /* Polypoint Red */
-    --accent-hover: #b91c21;
+    --accent: #f6a60a;
+    /* Polypoint Orange */
+    --accent-hover: #d97706;
 
     --border: #e2e8f0;
 
     --success: #007768;
-    /* Polypoint Darkgreen */
     --success-bg: #9bcc97;
-    /* Polypoint Lightgreen */
     --danger: #d6272c;
-    /* Polypoint Red */
 
     --glass-border: rgba(0, 0, 0, 0.05);
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 * {
@@ -126,11 +119,10 @@ body {
 select {
     width: 100%;
     padding: 0.75rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    /* Semi-transparent on dark sidebar */
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: #f8f9fa;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: var(--text-sidebar);
+    color: var(--text-primary);
     font-family: inherit;
     cursor: pointer;
     outline: none;
@@ -138,7 +130,7 @@ select {
 }
 
 select:focus {
-    border-color: var(--polypoint-mint);
+    border-color: var(--accent);
 }
 
 .nav-links {
@@ -149,24 +141,24 @@ select:focus {
 .nav-link {
     display: block;
     padding: 0.75rem 1rem;
-    color: var(--text-sidebar-secondary);
+    color: var(--text-sidebar);
     text-decoration: none;
-    border-radius: 8px;
+    border-radius: 50px;
+    /* Pill shape for links too? Or keep rounded rect? Let's go rounded rect but cleaner */
     margin-bottom: 0.5rem;
     transition: all 0.2s;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-sidebar);
+    background-color: #f1f5f9;
+    color: var(--accent);
 }
 
 .nav-link.active {
-    background-color: var(--polypoint-mint);
-    /* Mint looks good on Dark Blue */
+    background-color: var(--accent);
     color: white;
-    box-shadow: 0 4px 12px rgba(87, 167, 177, 0.3);
+    box-shadow: 0 4px 12px rgba(246, 166, 10, 0.3);
 }
 
 .user-info {
@@ -218,8 +210,9 @@ select:focus {
 
 /* Common Components */
 .btn {
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    /* Pill shape */
     border: none;
     font-weight: 500;
     cursor: pointer;
@@ -233,6 +226,8 @@ select:focus {
 .btn-primary {
     background-color: var(--accent);
     color: white;
+    font-weight: 600;
+    border: 2px solid var(--accent);
 }
 
 .btn-primary:hover {
