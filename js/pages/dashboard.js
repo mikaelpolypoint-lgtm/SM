@@ -46,20 +46,23 @@ export async function renderDashboard(container, pi) {
         const load = parseFloat(dev.load) || 90;
         const developRatio = parseFloat(dev.developRatio) || 0;
         const maintainRatio = parseFloat(dev.maintainRatio) || 0;
+        const manageRatio = parseFloat(dev.manageRatio) || 0;
         const velocity = parseFloat(dev.velocity) || 0;
 
         const devH = (dailyHours * (load / 100) * (developRatio / 100));
         const maintainH = (dailyHours * (load / 100) * (maintainRatio / 100));
+        const manageH = (dailyHours * (load / 100) * (manageRatio / 100));
         const dailySP = (devH / 8) * velocity;
 
-        return { devH, maintainH, dailySP };
+        return { devH, maintainH, manageH, dailySP };
     };
 
     // Generate Tables
     const tables = [
         { title: "SP Load", field: "dailySP" },
         { title: "Dev h", field: "devH" },
-        { title: "Maintain h", field: "maintainH" }
+        { title: "Maintain h", field: "maintainH" },
+        { title: "Manage h", field: "manageH" }
     ];
 
     // Teams for Filter
