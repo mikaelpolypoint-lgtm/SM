@@ -1,16 +1,60 @@
 :root {
-    --bg-body: #0f172a;
-    --bg-sidebar: #1e293b;
-    --bg-card: rgba(30, 41, 59, 0.7);
-    --bg-card-hover: rgba(51, 65, 85, 0.8);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --border: #334155;
-    --success: #10b981;
-    --danger: #ef4444;
-    --glass-border: rgba(255, 255, 255, 0.1);
+    /* POLYPOINT Brand Colors */
+    --polypoint-red: #d6272c;
+    --polypoint-black: #000000;
+    --polypoint-white: #ffffff;
+    --solutions-blue: #009ee3;
+    --services-turquoise: #3ab7ae;
+    --empowerments-orange: #ef8000;
+
+    /* Secondary Colors */
+    --polypoint-mint: #57a7b1;
+    --polypoint-orange: #f6a60a;
+    --polypoint-yellow: #ffcc00;
+    --polypoint-blue: #006aa4;
+    --polypoint-darkgreen: #007768;
+    --polypoint-lightgreen: #9bcc97;
+    --polypoint-darkblue: #243382;
+    --polypoint-purple: #7c2a87;
+    --polypoint-lightyellow: #ffee91;
+    --polypoint-grey: #8e8d94;
+
+    /* Management Colors */
+    --workforce-management: #66b2d5;
+    --resource-management: #004556;
+    --performance-management: #f1b600;
+    --documentation: #c17f0a;
+
+    /* Theme Mapping (Light Theme Base with Dark Sidebar) */
+    --bg-body: #f8f9fa;
+    /* Light Grey/White */
+    --bg-sidebar: #243382;
+    /* Polypoint Darkblue */
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+
+    --text-primary: #1e293b;
+    /* Dark Slate for text on light bg */
+    --text-secondary: #64748b;
+    /* Slate Grey */
+    --text-sidebar: #ffffff;
+    /* White text on dark sidebar */
+    --text-sidebar-secondary: rgba(255, 255, 255, 0.7);
+
+    --accent: #d6272c;
+    /* Polypoint Red */
+    --accent-hover: #b91c21;
+
+    --border: #e2e8f0;
+
+    --success: #007768;
+    /* Polypoint Darkgreen */
+    --success-bg: #9bcc97;
+    /* Polypoint Lightgreen */
+    --danger: #d6272c;
+    /* Polypoint Red */
+
+    --glass-border: rgba(0, 0, 0, 0.05);
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -73,7 +117,7 @@ body {
 .pi-selector label {
     display: block;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--text-sidebar-secondary);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -82,10 +126,11 @@ body {
 select {
     width: 100%;
     padding: 0.75rem;
-    background-color: var(--bg-body);
-    border: 1px solid var(--border);
+    background-color: rgba(255, 255, 255, 0.1);
+    /* Semi-transparent on dark sidebar */
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    color: var(--text-primary);
+    color: var(--text-sidebar);
     font-family: inherit;
     cursor: pointer;
     outline: none;
@@ -93,7 +138,7 @@ select {
 }
 
 select:focus {
-    border-color: var(--accent);
+    border-color: var(--polypoint-mint);
 }
 
 .nav-links {
@@ -104,7 +149,7 @@ select:focus {
 .nav-link {
     display: block;
     padding: 0.75rem 1rem;
-    color: var(--text-secondary);
+    color: var(--text-sidebar-secondary);
     text-decoration: none;
     border-radius: 8px;
     margin-bottom: 0.5rem;
@@ -113,19 +158,20 @@ select:focus {
 }
 
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-sidebar);
 }
 
 .nav-link.active {
-    background-color: var(--accent);
+    background-color: var(--polypoint-mint);
+    /* Mint looks good on Dark Blue */
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(87, 167, 177, 0.3);
 }
 
 .user-info {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: var(--text-sidebar-secondary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -145,7 +191,9 @@ select:focus {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: radial-gradient(circle at top right, #1e293b 0%, transparent 40%);
+    overflow: hidden;
+    background: var(--bg-body);
+    /* Removed dark gradient */
 }
 
 .top-bar {
@@ -234,7 +282,8 @@ td {
 }
 
 th {
-    background-color: rgba(30, 41, 59, 0.9);
+    background-color: #f1f5f9;
+    /* Light grey header */
     color: var(--text-secondary);
     font-weight: 600;
     text-transform: uppercase;
@@ -244,7 +293,7 @@ th {
 }
 
 tr:hover td {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--bg-card-hover);
 }
 
 input[type="text"],
@@ -283,10 +332,10 @@ input[type="number"]:focus {
 }
 
 .stat-card {
-    background: linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.4));
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
     padding: 1.5rem;
     border-radius: 16px;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--border);
 }
 
 .stat-value {
@@ -332,19 +381,27 @@ input[type="number"]:focus {
 }
 
 /* Availability Colors */
+/* Availability Colors */
 .avail-0 {
-    background-color: rgba(239, 68, 68, 0.2) !important;
-    /* Red */
+    background-color: rgba(214, 44, 39, 0.2) !important;
+    /* Polypoint Red */
+    color: var(--polypoint-red);
+    font-weight: bold;
 }
 
 .avail-0-5 {
-    background-color: rgba(234, 179, 8, 0.2) !important;
-    /* Yellow */
+    background-color: rgba(246, 166, 10, 0.2) !important;
+    /* Polypoint Orange */
+    color: #d97706;
+    /* Darker orange for text readability */
+    font-weight: bold;
 }
 
 .avail-1 {
-    background-color: rgba(16, 185, 129, 0.2) !important;
-    /* Green */
+    background-color: rgba(155, 204, 151, 0.3) !important;
+    /* Polypoint Lightgreen */
+    color: var(--polypoint-darkgreen);
+    font-weight: bold;
 }
 
 /* Ensure input background is transparent so cell color shows */
