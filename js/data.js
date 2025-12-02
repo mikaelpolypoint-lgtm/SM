@@ -238,6 +238,7 @@ export class DataService {
                 // Update
                 const index = items.findIndex(i => i.id === improvement.id);
                 if (index !== -1) {
+                    items[index] = improvement;
                 } else {
                     items.push(improvement);
                 }
