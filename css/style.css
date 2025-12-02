@@ -230,7 +230,8 @@ table {
     font-size: 0.9rem;
 }
 
-th, td {
+th,
+td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border);
@@ -250,7 +251,8 @@ tr:hover td {
     background-color: rgba(255, 255, 255, 0.02);
 }
 
-input[type="text"], input[type="number"] {
+input[type="text"],
+input[type="number"] {
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-primary);
@@ -260,7 +262,8 @@ input[type="text"], input[type="number"] {
     font-family: inherit;
 }
 
-input[type="text"]:focus, input[type="number"]:focus {
+input[type="text"]:focus,
+input[type="number"]:focus {
     border-color: var(--accent);
     background: rgba(0, 0, 0, 0.2);
     outline: none;
@@ -331,6 +334,7 @@ input[type="text"]:focus, input[type="number"]:focus {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
 }
+
 /* Availability Colors */
 .avail-0 {
     background-color: rgba(239, 68, 68, 0.2) !important;
@@ -354,7 +358,8 @@ input[type="text"]:focus, input[type="number"]:focus {
 
 /* Modal */
 .modal {
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -382,8 +387,15 @@ input[type="text"]:focus, input[type="number"]:focus {
 }
 
 @keyframes modalSlideIn {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .close-modal {
@@ -438,4 +450,27 @@ input[type="text"]:focus, input[type="number"]:focus {
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 2rem;
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #059669;
+    /* Darker green */
+    transform: translateY(-1px);
+}
+
+.btn-success:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+tr.modified td {
+    background-color: rgba(234, 179, 8, 0.1);
+    /* Subtle yellow tint */
+    border-bottom-color: rgba(234, 179, 8, 0.3);
 }

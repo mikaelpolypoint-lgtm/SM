@@ -44,6 +44,7 @@ export async function renderDevelopers(container, pi) {
                             </div>
                         </div>
 
+                        <button id="save-changes-btn" class="btn btn-success" style="display: none;">Save Changes</button>
                         <button id="add-dev-btn" class="btn btn-primary">+ Add Developer</button>
                     </div>
                 </div>
@@ -80,6 +81,7 @@ export async function renderDevelopers(container, pi) {
 
         // Event Listeners
         document.getElementById('add-dev-btn').addEventListener('click', () => addNewRow(pi));
+        document.getElementById('save-changes-btn').addEventListener('click', () => saveAllChanges(pi));
 
         document.getElementById('dev-team-filter').addEventListener('change', (e) => {
             render(e.target.value);
@@ -174,15 +176,14 @@ function addNewRow(pi) {
         team: 'Neon', key: '', specialCase: false,
         dailyHours: 8, load: 90, manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1
     };
-    // We don't save yet, just append UI. User must fill Key to save.
-    // Actually, let's save a temp one or just render.
-    // For simplicity, we just append the HTML.
-    const tr = document.createElement('tr');
-    tr.innerHTML = renderRow(newDev).replace('<tr', '<div').replace('</tr>', '</div>'); // Hacky, better to use a proper create element or re-render
-    // Re-rendering is safer
-    // But we need to save the current state first if we re-render?
-    // Let's just append the HTML string to innerHTML
-    tbody.insertAdjacentHTML('beforeend', renderRow(newDev));
+
+    const trHtml = renderRow(newDev);
+    tbody.insertAdjacentHTML('beforeend', trHtml);
+
+    // Mark as modified
+    const newRow = tbody.lastElementChild;
+    newRow.classList.add('modified');
+    document.getElementById('save-changes-btn').style.display = 'inline-block';
 }
 
 async function handleInputChange(input, pi) {
@@ -204,7 +205,7 @@ async function handleInputChange(input, pi) {
         velocity: row.querySelector('input[name="velocity"]').value,
     };
 
-    await dataService.saveDeveloper(pi, dev);
+    // await dataService.saveDeveloper(pi, dev); // Removed auto-save
 
     // Update calculated columns locally without full re-render
     const newHtml = renderRow(dev);
@@ -221,6 +222,55 @@ async function handleInputChange(input, pi) {
     // Update the delete button key
     row.querySelector('.delete-btn').dataset.key = key;
     row.dataset.key = key;
+
+    // Mark as modified
+    row.classList.add('modified');
+    document.getElementById('save-changes-btn').style.display = 'inline-block';
+}
+
+async function saveAllChanges(pi) {
+    const modifiedRows = document.querySelectorAll('#dev-table tr.modified');
+    if (modifiedRows.length === 0) return;
+
+    const btn = document.getElementById('save-changes-btn');
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+
+    try {
+        const promises = [];
+        modifiedRows.forEach(row => {
+            const keyInput = row.querySelector('input[name="key"]');
+            const key = keyInput.value;
+            if (!key || key.length !== 3) return; // Skip invalid
+
+            const dev = {
+                key: key,
+                team: row.querySelector('select[name="team"]').value,
+                specialCase: row.querySelector('input[name="specialCase"]').checked,
+                dailyHours: row.querySelector('input[name="dailyHours"]').value,
+                load: row.querySelector('input[name="load"]').value,
+                manageRatio: row.querySelector('input[name="manageRatio"]').value,
+                developRatio: row.querySelector('input[name="developRatio"]').value,
+                maintainRatio: row.querySelector('input[name="maintainRatio"]').value,
+                velocity: row.querySelector('input[name="velocity"]').value,
+            };
+            promises.push(dataService.saveDeveloper(pi, dev));
+        });
+
+        await Promise.all(promises);
+
+        // Cleanup
+        modifiedRows.forEach(row => row.classList.remove('modified'));
+        btn.style.display = 'none';
+        alert('Changes saved successfully!');
+
+    } catch (err) {
+        console.error("Error saving changes:", err);
+        alert("Failed to save some changes.");
+    } finally {
+        btn.textContent = 'Save Changes';
+        btn.disabled = false;
+    }
 }
 
 function exportDevelopers(developers) {
