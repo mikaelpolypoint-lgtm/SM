@@ -51,17 +51,13 @@ body {
     margin-bottom: 2rem;
 }
 
-.logo-icon {
+.logo-img {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.2rem;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    object-fit: contain;
+    /* background: linear-gradient(135deg, var(--accent), #8b5cf6); */
+    /* border-radius: 12px; */
+    /* box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); */
 }
 
 .brand h1 {
