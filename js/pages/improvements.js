@@ -14,30 +14,29 @@ export async function renderImprovements(container) {
                     <table id="improvements-table">
                         <thead>
                             <tr>
-                                <th>Status</th>
-                                <th>Priority</th>
+                                <th style="width: 50px;"></th> <!-- Delete -->
+                                <th style="width: 140px;">Status</th>
+                                <th style="width: 100px;">Priority</th>
                                 <th>Idea</th>
-                                <th>Reporter</th>
+                                <th style="width: 150px;">Reporter</th>
                                 <th>Details</th>
-                                <th>Date</th>
-                                <th>Actions</th>
+                                <th style="width: 150px;">Date</th>
                             </tr>
                         </thead>
                         <tbody id="improvements-body">
-                            <tr><td colspan="6" class="loading-spinner">Loading...</td></tr>
+                            <tr><td colspan="7" class="loading-spinner">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Modal -->
+        <!-- Modal for Creation Only -->
         <div id="idea-modal" class="modal">
             <div class="modal-content card">
                 <span class="close-modal">&times;</span>
-                <h2><span id="modal-title">Submit New Idea</span></h2>
+                <h2>Submit New Idea</h2>
                 <form id="idea-form">
-                    <input type="hidden" id="idea-id">
                     <div class="form-group">
                         <label for="idea-input">Idea <small>(max 50 chars)</small></label>
                         <input type="text" id="idea-input" maxlength="50" required placeholder="Enter your idea...">
@@ -48,16 +47,6 @@ export async function renderImprovements(container) {
                         <select id="priority-input">
                             <option value="Low" selected>Low</option>
                             <option value="High">High</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" id="status-group" style="display:none;">
-                        <label for="status-input">Status</label>
-                        <select id="status-input">
-                            <option value="Backlog">Backlog</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Done">Done</option>
-                            <option value="Dismissed">Dismissed</option>
                         </select>
                     </div>
 
@@ -73,28 +62,21 @@ export async function renderImprovements(container) {
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="btn-submit-form">Submit</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
                     </div>
                 </form>
             </div>
         </div>
     `;
 
-    // Event Listeners
+    // Modal Event Listeners
     const modal = document.getElementById('idea-modal');
     const btnAdd = document.getElementById('btn-add-idea');
     const closeSpans = document.querySelectorAll('.close-modal, .close-modal-btn');
     const form = document.getElementById('idea-form');
-    const modalTitle = document.getElementById('modal-title');
-    const btnSubmit = document.getElementById('btn-submit-form');
-    const statusGroup = document.getElementById('status-group');
 
     btnAdd.onclick = () => {
         form.reset();
-        document.getElementById('idea-id').value = '';
-        modalTitle.textContent = "Submit New Idea";
-        btnSubmit.textContent = "Submit";
-        statusGroup.style.display = 'none'; // Hide status for new
         modal.style.display = "flex";
         document.getElementById('idea-input').focus();
     }
@@ -115,35 +97,22 @@ export async function renderImprovements(container) {
     form.onsubmit = async (e) => {
         e.preventDefault();
 
-        const id = document.getElementById('idea-id').value;
         const idea = document.getElementById('idea-input').value;
         const priority = document.getElementById('priority-input').value;
         const reporter = document.getElementById('reporter-input').value;
         const details = document.getElementById('details-input').value;
-        const status = document.getElementById('status-input').value;
 
-        const improvement = {
+        const newImprovement = {
             idea,
             priority,
             reporter,
+            status: 'Backlog', // Default for new
             details,
-            // If new, default to Backlog. If edit, use selected status.
-            status: id ? status : 'Backlog',
-            date: id ? undefined : new Date().toISOString() // Keep original date if edit? Or update? Usually keep creation date.
+            date: new Date().toISOString()
         };
 
-        if (id) {
-            improvement.id = id;
-            // We need to preserve the original date if possible, but we don't have it here easily unless we stored it in hidden field.
-            // Let's fetch it or store it in dataset when opening modal.
-            // Simpler: store date in a hidden field too.
-            improvement.date = document.getElementById('idea-date').value;
-        } else {
-            improvement.date = new Date().toISOString();
-        }
-
         try {
-            await dataService.saveImprovement(improvement);
+            await dataService.saveImprovement(newImprovement);
             closeModal();
             await loadImprovements(); // Refresh table
         } catch (err) {
@@ -152,7 +121,58 @@ export async function renderImprovements(container) {
         }
     };
 
-    // Load Data
+    // Table Event Listeners (Inline Editing)
+    const table = document.getElementById('improvements-table');
+
+    table.addEventListener('change', async (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+            const row = e.target.closest('tr');
+            const id = row.dataset.id;
+            if (!id) return;
+
+            const updatedItem = {
+                id: id,
+                status: row.querySelector('.input-status').value,
+                priority: row.querySelector('.input-priority').value,
+                idea: row.querySelector('.input-idea').value,
+                reporter: row.querySelector('.input-reporter').value,
+                details: row.querySelector('.input-details').value,
+                date: row.dataset.date // Keep original date
+            };
+
+            try {
+                await dataService.saveImprovement(updatedItem);
+
+                // Visual feedback (optional, e.g. flash green)
+                e.target.style.borderColor = 'var(--success)';
+                setTimeout(() => {
+                    e.target.style.borderColor = 'var(--border)';
+                }, 1000);
+
+            } catch (err) {
+                console.error("Error saving change:", err);
+                e.target.style.borderColor = 'var(--danger)';
+                alert("Failed to save change");
+            }
+        }
+    });
+
+    table.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-delete')) {
+            const row = e.target.closest('tr');
+            const id = row.dataset.id;
+            if (confirm("Are you sure you want to delete this idea?")) {
+                try {
+                    await dataService.deleteImprovement(id);
+                    row.remove();
+                } catch (err) {
+                    console.error("Error deleting:", err);
+                    alert("Failed to delete.");
+                }
+            }
+        }
+    });
+
     await loadImprovements();
 }
 
@@ -186,39 +206,7 @@ async function loadImprovements() {
         }
 
         data.forEach(item => {
-            const tr = document.createElement('tr');
-
-            const dateObj = new Date(item.date);
-            const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            let statusColor = 'var(--text-secondary)';
-            if (item.status === 'In Progress') statusColor = 'var(--accent)';
-            if (item.status === 'Done') statusColor = 'var(--success)';
-            if (item.status === 'Dismissed') statusColor = 'var(--danger)';
-
-            let priorityColor = item.priority === 'High' ? 'var(--danger)' : 'var(--success)';
-
-            tr.innerHTML = `
-                <td><span style="color: ${statusColor}; font-weight: bold;">${item.status}</span></td>
-                <td><span style="color: ${priorityColor};">${item.priority}</span></td>
-                <td>${escapeHtml(item.idea)}</td>
-                <td>${escapeHtml(item.reporter)}</td>
-                <td><small>${escapeHtml(item.details || '')}</small></td>
-                <td><small>${dateStr}</small></td>
-                <td>
-                    <button class="btn btn-secondary btn-sm btn-edit" data-id="${item.id}">Edit</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // Add Edit Listeners
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.onclick = () => {
-                const id = btn.dataset.id;
-                const item = data.find(i => i.id === id);
-                if (item) openEditModal(item);
-            };
+            tbody.appendChild(renderRow(item));
         });
 
     } catch (err) {
@@ -227,34 +215,58 @@ async function loadImprovements() {
     }
 }
 
-function openEditModal(item) {
-    const modal = document.getElementById('idea-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const btnSubmit = document.getElementById('btn-submit-form');
-    const statusGroup = document.getElementById('status-group');
+function renderRow(item) {
+    const tr = document.createElement('tr');
+    tr.dataset.id = item.id;
+    tr.dataset.date = item.date;
 
-    document.getElementById('idea-id').value = item.id;
-    // Add hidden date field if not exists, or create it dynamically
-    let dateInput = document.getElementById('idea-date');
-    if (!dateInput) {
-        dateInput = document.createElement('input');
-        dateInput.type = 'hidden';
-        dateInput.id = 'idea-date';
-        document.getElementById('idea-form').appendChild(dateInput);
-    }
-    dateInput.value = item.date;
+    const dateObj = new Date(item.date);
+    const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    document.getElementById('idea-input').value = item.idea;
-    document.getElementById('priority-input').value = item.priority;
-    document.getElementById('reporter-input').value = item.reporter;
-    document.getElementById('details-input').value = item.details || '';
-    document.getElementById('status-input').value = item.status;
+    tr.innerHTML = `
+        <td>
+            <button class="btn btn-secondary btn-sm btn-delete" style="color: var(--danger); border-color: var(--danger); padding: 0.2rem 0.5rem;">&times;</button>
+        </td>
+        <td>
+            <select class="input-status" style="width: 100%; padding: 0.4rem; background: transparent; border: 1px solid transparent; color: inherit;">
+                <option value="Backlog" ${item.status === 'Backlog' ? 'selected' : ''}>Backlog</option>
+                <option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                <option value="Done" ${item.status === 'Done' ? 'selected' : ''}>Done</option>
+                <option value="Dismissed" ${item.status === 'Dismissed' ? 'selected' : ''}>Dismissed</option>
+            </select>
+        </td>
+        <td>
+            <select class="input-priority" style="width: 100%; padding: 0.4rem; background: transparent; border: 1px solid transparent; color: inherit;">
+                <option value="Low" ${item.priority === 'Low' ? 'selected' : ''}>Low</option>
+                <option value="High" ${item.priority === 'High' ? 'selected' : ''}>High</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="input-idea" value="${escapeHtml(item.idea)}" maxlength="50" style="width: 100%; padding: 0.4rem; background: transparent; border: 1px solid transparent; color: inherit;">
+        </td>
+        <td>
+            <input type="text" class="input-reporter" value="${escapeHtml(item.reporter)}" maxlength="20" style="width: 100%; padding: 0.4rem; background: transparent; border: 1px solid transparent; color: inherit;">
+        </td>
+        <td>
+            <input type="text" class="input-details" value="${escapeHtml(item.details || '')}" maxlength="300" style="width: 100%; padding: 0.4rem; background: transparent; border: 1px solid transparent; color: inherit;">
+        </td>
+        <td><small>${dateStr}</small></td>
+    `;
 
-    modalTitle.textContent = "Edit Idea";
-    btnSubmit.textContent = "Update";
-    statusGroup.style.display = 'block'; // Show status for edit
+    // Add focus styles via JS or CSS? CSS is better but inline styles here for simplicity
+    const inputs = tr.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.onfocus = () => {
+            input.style.background = 'rgba(0, 0, 0, 0.2)';
+            input.style.borderColor = 'var(--accent)';
+        };
+        input.onblur = () => {
+            input.style.background = 'transparent';
+            input.style.borderColor = 'transparent';
+        };
+    });
 
-    modal.style.display = "flex";
+    return tr;
 }
 
 function escapeHtml(text) {

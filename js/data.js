@@ -238,7 +238,6 @@ export class DataService {
                 // Update
                 const index = items.findIndex(i => i.id === improvement.id);
                 if (index !== -1) {
-                    items[index] = improvement;
                 } else {
                     items.push(improvement);
                 }
@@ -254,6 +253,16 @@ export class DataService {
             // Ensure ID is in the object
             improvement.id = docId;
             await setDoc(doc(db, "improvements", docId), improvement);
+        }
+    }
+
+    async deleteImprovement(id) {
+        if (this.useLocalStorage) {
+            let items = await this.getImprovements();
+            items = items.filter(i => i.id !== id);
+            localStorage.setItem(`${STORAGE_PREFIX}improvements`, JSON.stringify(items));
+        } else {
+            await deleteDoc(doc(db, "improvements", id));
         }
     }
 }
