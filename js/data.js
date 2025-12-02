@@ -214,6 +214,48 @@ export class DataService {
             }
         }
     }
+    // --- Improvements ---
+
+    async getImprovements() {
+        if (this.useLocalStorage) {
+            const data = localStorage.getItem(`${STORAGE_PREFIX}improvements`);
+            return data ? JSON.parse(data) : [];
+        } else {
+            const q = query(collection(db, "improvements"));
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(d => d.data());
+        }
+    }
+
+    async saveImprovement(improvement) {
+        // improvement: { id, idea, priority, reporter, status, details, date }
+        if (!improvement.idea) throw new Error("Idea is required");
+
+        if (this.useLocalStorage) {
+            let items = await this.getImprovements();
+
+            if (improvement.id) {
+                // Update
+                const index = items.findIndex(i => i.id === improvement.id);
+                if (index !== -1) {
+                    items[index] = improvement;
+                } else {
+                    items.push(improvement);
+                }
+            } else {
+                // Create
+                improvement.id = `imp_${Date.now()}`;
+                items.push(improvement);
+            }
+
+            localStorage.setItem(`${STORAGE_PREFIX}improvements`, JSON.stringify(items));
+        } else {
+            const docId = improvement.id || `imp_${Date.now()}`;
+            // Ensure ID is in the object
+            improvement.id = docId;
+            await setDoc(doc(db, "improvements", docId), improvement);
+        }
+    }
 }
 
 export const dataService = new DataService();
