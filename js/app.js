@@ -3,13 +3,15 @@ import { renderDevelopers } from './pages/developers.js';
 import { renderAvailabilities } from './pages/availabilities.js';
 import { renderDetails } from './pages/details.js';
 import { renderImprovements } from './pages/improvements.js';
+import { renderChanges } from './pages/changes.js';
 
 const routes = {
     'dashboard': renderDashboard,
     'developers': renderDevelopers,
     'availabilities': renderAvailabilities,
     'details': renderDetails,
-    'improvements': renderImprovements
+    'improvements': renderImprovements,
+    'changes': renderChanges
 };
 
 const DEFAULT_PI = '26.1';
