@@ -263,9 +263,12 @@ function exportAvailabilitiesCSV(availabilities, developers) {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
 
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', url);
-        linkElement.setAttribute('download', 'availabilities_export.csv');
+        linkElement.setAttribute('download', `availabilities_export_${timestamp}.csv`);
         linkElement.style.display = 'none';
         document.body.appendChild(linkElement);
 

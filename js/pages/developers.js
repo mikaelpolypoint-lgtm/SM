@@ -277,7 +277,10 @@ function exportDevelopers(developers) {
     const dataStr = JSON.stringify(developers, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
-    const exportFileDefaultName = 'developers_export.json';
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const exportFileDefaultName = `developers_export_${timestamp}.json`;
 
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -298,9 +301,12 @@ function exportDevelopersCSV(developers) {
     });
 
     const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', 'developers_export.csv');
+    linkElement.setAttribute('download', `developers_export_${timestamp}.csv`);
     linkElement.click();
 }
 
