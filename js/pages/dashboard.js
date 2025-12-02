@@ -90,7 +90,10 @@ export async function renderDashboard(container, pi) {
         tables.forEach(tableConfig => {
             html += `
                 <div class="card">
-                    <h3>${tableConfig.title}</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>${tableConfig.title}</h3>
+                        <button class="btn btn-sm btn-secondary btn-export-dashboard" data-field="${tableConfig.field}" data-title="${tableConfig.title}">Export CSV</button>
+                    </div>
                     <div class="table-container">
                         <table>
                             <thead>
@@ -119,6 +122,14 @@ export async function renderDashboard(container, pi) {
 
         document.getElementById('sprint-filter').addEventListener('change', (e) => {
             render(filterTeam, e.target.value);
+        });
+
+        document.querySelectorAll('.btn-export-dashboard').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const field = btn.dataset.field;
+                const title = btn.dataset.title;
+                exportDashboardTable(title, field, filteredSprints, filteredDevs, getSprintCapacity, getDevAttrs);
+            });
         });
     };
 
@@ -191,4 +202,84 @@ function renderTableBody(sprints, developers, attrField, getSprintCapacity, getD
     noIpRow += `<td>${format(grandTotalNoIP)}</td></tr>`;
 
     return rowsHtml + totalRow + noIpRow;
+}
+
+function exportDashboardTable(title, field, sprints, developers, getSprintCapacity, getDevAttrs) {
+    const format = (n) => field === 'dailySP' ? n.toFixed(1) : Math.round(n);
+
+    // Prepare Data
+    const csvData = [];
+
+    // Header
+    const header = ['Sprint', ...developers.map(d => d.key), 'Total'];
+
+    // Rows
+    const devTotals = {};
+    const devTotalsNoIP = {};
+    developers.forEach(d => {
+        devTotals[d.key] = 0;
+        devTotalsNoIP[d.key] = 0;
+    });
+
+    sprints.forEach(sprint => {
+        const isIpSprint = sprint.name.includes('IP');
+        const row = { 'Sprint': sprint.name };
+        let rowTotal = 0;
+
+        developers.forEach(dev => {
+            const capacityDays = getSprintCapacity(sprint.name, dev.key);
+            const attrs = getDevAttrs(dev);
+            const val = capacityDays * attrs[field];
+
+            devTotals[dev.key] += val;
+            if (!isIpSprint) devTotalsNoIP[dev.key] += val;
+
+            if (!dev.specialCase) rowTotal += val;
+
+            row[dev.key] = format(val);
+        });
+        row['Total'] = format(rowTotal);
+        csvData.push(row);
+    });
+
+    // Total Row
+    const totalRow = { 'Sprint': 'Total' };
+    let grandTotal = 0;
+    developers.forEach(dev => {
+        totalRow[dev.key] = format(devTotals[dev.key]);
+        if (!dev.specialCase) grandTotal += devTotals[dev.key];
+    });
+    totalRow['Total'] = format(grandTotal);
+    csvData.push(totalRow);
+
+    // Ohne IP Row
+    const noIpRow = { 'Sprint': 'Ohne IP' };
+    let grandTotalNoIP = 0;
+    developers.forEach(dev => {
+        noIpRow[dev.key] = format(devTotalsNoIP[dev.key]);
+        if (!dev.specialCase) grandTotalNoIP += devTotalsNoIP[dev.key];
+    });
+    noIpRow['Total'] = format(grandTotalNoIP);
+    csvData.push(noIpRow);
+
+    // Generate CSV
+    const csv = Papa.unparse({
+        fields: header,
+        data: csvData
+    });
+
+    // Download
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    const filename = `dashboard_${title.replace(/\s+/g, '_').toLowerCase()}_${timestamp}.csv`;
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
