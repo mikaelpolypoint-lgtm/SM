@@ -142,18 +142,6 @@ export class DataService {
     }
 
     async ensureDefaults(pi) {
-        // Check if already initialized to prevent re-adding deleted devs
-        if (this.useLocalStorage) {
-            if (localStorage.getItem(`${STORAGE_PREFIX}${pi}_defaults_init`)) return;
-        } else {
-            try {
-                const docSnap = await getDoc(doc(db, "metadata", `${pi}_defaults_init`));
-                if (docSnap.exists()) return;
-            } catch (e) {
-                console.warn("Error checking defaults init", e);
-            }
-        }
-
         const DEFAULT_DEVELOPERS = [
             { team: 'Tungsten', key: 'JRE' }, { team: 'Tungsten', key: 'DKA' }, { team: 'Tungsten', key: 'LRU' },
             { team: 'Tungsten', key: 'RGA' }, { team: 'Tungsten', key: 'LOR' }, { team: 'Tungsten', key: 'OMO' },
@@ -172,15 +160,50 @@ export class DataService {
             { team: 'Admin', key: 'BAS' }, { team: 'Admin', key: 'DGR' }, { team: 'Admin', key: 'RBL' }, { team: 'Admin', key: 'LSO' }
         ];
 
+        const NEW_KEYS = ['KFI', 'SOL', 'JDE', 'VSC', 'CIR', 'MVA', 'NRA', 'BAS', 'DGR', 'RBL', 'LSO'];
+
+        // Check initialization states
+        let isInit = false;
+        let isV2 = false;
+
+        if (this.useLocalStorage) {
+            isInit = !!localStorage.getItem(`${STORAGE_PREFIX}${pi}_defaults_init`);
+            isV2 = !!localStorage.getItem(`${STORAGE_PREFIX}${pi}_defaults_v2`);
+        } else {
+            try {
+                const docSnap = await getDoc(doc(db, "metadata", `${pi}_defaults_init`));
+                isInit = docSnap.exists();
+                // We'll skip remote v2 check for simplicity and rely on local logic or just re-check
+                // For Firestore, we might need a separate doc for v2, but let's assume if init is true, we check v2
+                if (isInit) {
+                    const v2Snap = await getDoc(doc(db, "metadata", `${pi}_defaults_v2`));
+                    isV2 = v2Snap.exists();
+                }
+            } catch (e) {
+                console.warn("Error checking defaults init", e);
+            }
+        }
+
+        if (isInit && isV2) return;
+
         const currentDevs = await this.getDevelopers(pi);
         const currentMap = new Map(currentDevs.map(d => [d.key, d]));
 
         for (const def of DEFAULT_DEVELOPERS) {
-            // If dev doesn't exist, OR if it's YHU (override request), save/update
-            if (!currentMap.has(def.key) || def.key === 'YHU') {
+            // We add the developer if:
+            // 1. We are not initialized at all (!isInit) AND it's missing.
+            // 2. OR we are initialized but not V2 (!isV2) AND it is one of the NEW keys AND it's missing.
+            // 3. OR it is 'YHU' (special override case).
+
+            const isNewKey = NEW_KEYS.includes(def.key);
+            const shouldAdd = (!isInit && !currentMap.has(def.key)) ||
+                (!isV2 && isNewKey && !currentMap.has(def.key)) ||
+                (def.key === 'YHU');
+
+            if (shouldAdd) {
                 const newDev = {
                     ...def,
-                    name: def.key, // Default name to Key
+                    name: def.key,
                     stack: 'Fullstack',
                     dailyHours: 8,
                     load: 90,
@@ -188,32 +211,23 @@ export class DataService {
                     developRatio: 80,
                     maintainRatio: 20,
                     velocity: 1,
-                    ...currentMap.get(def.key) // Keep existing values if any?
+                    ...currentMap.get(def.key) // Keep existing values if any (for YHU case)
                 };
 
-                // If it is YHU, we specifically want to ensure the Team is correct (Zn2C) as per list
-                // The user said "override the current YHU".
-                if (def.key === 'YHU') {
-                    newDev.team = def.team;
-                    // Should we reset other values? "Override" usually means replace.
-                    // But let's keep it safe and just ensure team and existence.
-                }
-
-                // If it didn't exist, we use the defaults above.
-                // If it did exist (and we are here because it's YHU), we merged existing values.
-                // But we want to ensure the *Team* is correct from the list.
-                newDev.team = def.team;
+                if (def.key === 'YHU') newDev.team = def.team; // Enforce team for YHU
 
                 await this.saveDeveloper(pi, newDev);
             }
         }
 
-        // Mark as initialized
+        // Update Flags
         if (this.useLocalStorage) {
             localStorage.setItem(`${STORAGE_PREFIX}${pi}_defaults_init`, 'true');
+            localStorage.setItem(`${STORAGE_PREFIX}${pi}_defaults_v2`, 'true');
         } else {
             try {
-                await setDoc(doc(db, "metadata", `${pi}_defaults_init`), { initialized: true });
+                if (!isInit) await setDoc(doc(db, "metadata", `${pi}_defaults_init`), { initialized: true });
+                if (!isV2) await setDoc(doc(db, "metadata", `${pi}_defaults_v2`), { initialized: true });
             } catch (e) {
                 console.warn("Error setting defaults init", e);
             }
