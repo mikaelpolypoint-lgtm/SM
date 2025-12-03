@@ -308,20 +308,20 @@ function handleImport(e, pi, developers, availabilities) {
                 return 0;
             };
 
-            // Helper to parse date (DD.MM.YYYY -> YYYY-MM-DD)
+            // Helper to parse date (DD.MM.YYYY or DD.MM.YY -> YYYY-MM-DD)
             const parseDate = (dateStr) => {
                 if (!dateStr) return null;
                 const parts = dateStr.split('.');
                 if (parts.length === 3) {
-                    // Pad with 0 if needed
                     const d = parts[0].padStart(2, '0');
                     const m = parts[1].padStart(2, '0');
-                    const y = parts[2];
-                    // Handle 2 digit year if needed? Import regex was \d{4}.
-                    // If export uses 4 digits, we are good.
-                    // If import file has 2 digits, we might need to fix parseDate.
-                    // The regex in handleImport was /^\d{1,2}\.\d{1,2}\.\d{4}$/.
-                    // So it expects 4 digit year.
+                    let y = parts[2];
+
+                    // Handle 2 digit year
+                    if (y.length === 2) {
+                        y = '20' + y;
+                    }
+
                     return `${y}-${m}-${d}`;
                 }
                 return dateStr; // Fallback
@@ -336,8 +336,8 @@ function handleImport(e, pi, developers, availabilities) {
                 // If not found by name, assume first key if it looks like a date?
                 // But header:true makes keys unpredictable order technically, but usually safe.
                 if (!dateKey) {
-                    // Fallback: check if any value looks like DD.MM.YYYY
-                    dateKey = Object.keys(csvRow).find(k => /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(csvRow[k]));
+                    // Fallback: check if any value looks like DD.MM.YYYY or DD.MM.YY
+                    dateKey = Object.keys(csvRow).find(k => /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(csvRow[k]));
                 }
 
                 if (!dateKey) return; // Skip if no date found
