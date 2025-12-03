@@ -206,6 +206,8 @@ export class DataService {
                     name: def.key,
                     stack: 'Fullstack',
                     dailyHours: 8,
+                    workRatio: 100,
+                    internalCost: 100,
                     load: 90,
                     manageRatio: 0,
                     developRatio: 80,

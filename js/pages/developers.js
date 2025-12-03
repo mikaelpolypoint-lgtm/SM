@@ -66,6 +66,8 @@ export async function renderDevelopers(container, pi, queryParams = {}) {
                                 <th>Key (3)</th>
                                 <th>Specialcase</th>
                                 <th>Daily Hours</th>
+                                <th>Work %</th>
+                                <th>Cost/h</th>
                                 <th>Load %</th>
                                 <th>Manage %</th>
                                 <th>Develop %</th>
@@ -146,6 +148,8 @@ export async function renderDevelopers(container, pi, queryParams = {}) {
 function renderRow(dev) {
     // Calculations
     const dailyHours = parseFloat(dev.dailyHours) || 8;
+    const workRatio = parseFloat(dev.workRatio) || 100;
+    const internalCost = parseFloat(dev.internalCost) || 100;
     const load = parseFloat(dev.load) || 90;
     const manageRatio = parseFloat(dev.manageRatio) || 0;
     const developRatio = parseFloat(dev.developRatio) || 0;
@@ -179,6 +183,8 @@ function renderRow(dev) {
             <td><input type="text" name="key" value="${dev.key || ''}" maxlength="3" class="dev-input" style="width: 50px;"></td>
             <td><input type="checkbox" name="specialCase" ${dev.specialCase ? 'checked' : ''} class="dev-input"></td>
             <td><input type="number" name="dailyHours" value="${dev.dailyHours || 8}" class="dev-input" style="width: 60px;"></td>
+            <td><input type="number" name="workRatio" value="${dev.workRatio || 100}" class="dev-input" style="width: 60px;"></td>
+            <td><input type="number" name="internalCost" value="${dev.internalCost || 100}" class="dev-input" style="width: 60px;"></td>
             <td><input type="number" name="load" value="${dev.load || 90}" class="dev-input" style="width: 60px;"></td>
             <td><input type="number" name="manageRatio" value="${dev.manageRatio || 0}" class="dev-input" style="width: 60px;"></td>
             <td><input type="number" name="developRatio" value="${dev.developRatio || 0}" class="dev-input" style="width: 60px;"></td>
@@ -198,7 +204,7 @@ function addNewRow(pi) {
     const tbody = document.querySelector('#dev-table tbody');
     const newDev = {
         team: 'Neon', key: '', specialCase: false,
-        dailyHours: 8, load: 90, manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1
+        dailyHours: 8, workRatio: 100, internalCost: 100, load: 90, manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1
     };
 
     const trHtml = renderRow(newDev);
@@ -222,6 +228,8 @@ async function handleInputChange(input, pi) {
         team: row.querySelector('select[name="team"]').value,
         specialCase: row.querySelector('input[name="specialCase"]').checked,
         dailyHours: row.querySelector('input[name="dailyHours"]').value,
+        workRatio: row.querySelector('input[name="workRatio"]').value,
+        internalCost: row.querySelector('input[name="internalCost"]').value,
         load: row.querySelector('input[name="load"]').value,
         manageRatio: row.querySelector('input[name="manageRatio"]').value,
         developRatio: row.querySelector('input[name="developRatio"]').value,
@@ -275,6 +283,8 @@ async function saveAllChanges(pi) {
                 team: row.querySelector('select[name="team"]').value,
                 specialCase: row.querySelector('input[name="specialCase"]').checked,
                 dailyHours: row.querySelector('input[name="dailyHours"]').value,
+                workRatio: row.querySelector('input[name="workRatio"]').value,
+                internalCost: row.querySelector('input[name="internalCost"]').value,
                 load: row.querySelector('input[name="load"]').value,
                 manageRatio: row.querySelector('input[name="manageRatio"]').value,
                 developRatio: row.querySelector('input[name="developRatio"]').value,
@@ -318,7 +328,7 @@ function exportDevelopers(developers) {
 
 function exportDevelopersCSV(developers) {
     // Select only relevant fields
-    const fields = ['team', 'key', 'specialCase', 'dailyHours', 'load', 'manageRatio', 'developRatio', 'maintainRatio', 'velocity'];
+    const fields = ['team', 'key', 'specialCase', 'dailyHours', 'workRatio', 'internalCost', 'load', 'manageRatio', 'developRatio', 'maintainRatio', 'velocity'];
     const csv = Papa.unparse({
         fields: fields,
         data: developers.map(d => {
