@@ -164,7 +164,12 @@ export class DataService {
             { team: 'Hydrogen 1', key: 'DMA' }, { team: 'Hydrogen 1', key: 'VNA' }, { team: 'Hydrogen 1', key: 'RBU' },
             { team: 'Zn2C', key: 'JEI' }, { team: 'Zn2C', key: 'YHU' }, { team: 'Zn2C', key: 'PNI' },
             { team: 'Zn2C', key: 'VTS' }, { team: 'Zn2C', key: 'PSA' }, { team: 'Zn2C', key: 'MMA' },
-            { team: 'Zn2C', key: 'LMA' }, { team: 'Zn2C', key: 'RSA' }, { team: 'Zn2C', key: 'NAC' }
+            { team: 'Zn2C', key: 'LMA' }, { team: 'Zn2C', key: 'RSA' }, { team: 'Zn2C', key: 'NAC' },
+            // New Teams
+            { team: 'UI', key: 'KFI' }, { team: 'UI', key: 'SOL' },
+            { team: 'TMGT', key: 'JDE' }, { team: 'TMGT', key: 'VSC' },
+            { team: 'Admin', key: 'CIR' }, { team: 'Admin', key: 'MVA' }, { team: 'Admin', key: 'NRA' },
+            { team: 'Admin', key: 'BAS' }, { team: 'Admin', key: 'DGR' }, { team: 'Admin', key: 'RBL' }, { team: 'Admin', key: 'LSO' }
         ];
 
         const currentDevs = await this.getDevelopers(pi);

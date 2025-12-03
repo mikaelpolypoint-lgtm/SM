@@ -161,6 +161,9 @@ function renderRow(dev) {
                     <option value="Hydrogen 1" ${dev.team === 'Hydrogen 1' ? 'selected' : ''}>Hydrogen 1</option>
                     <option value="Zn2C" ${dev.team === 'Zn2C' ? 'selected' : ''}>Zn2C</option>
                     <option value="Tungsten" ${dev.team === 'Tungsten' ? 'selected' : ''}>Tungsten</option>
+                    <option value="UI" ${dev.team === 'UI' ? 'selected' : ''}>UI</option>
+                    <option value="TMGT" ${dev.team === 'TMGT' ? 'selected' : ''}>TMGT</option>
+                    <option value="Admin" ${dev.team === 'Admin' ? 'selected' : ''}>Admin</option>
                 </select>
             </td>
             <td><input type="text" name="key" value="${dev.key || ''}" maxlength="3" class="dev-input" style="width: 50px;"></td>
