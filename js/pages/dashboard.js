@@ -1,6 +1,6 @@
 import { dataService } from '../data.js';
 
-export async function renderDashboard(container, pi) {
+export async function renderDashboard(container, pi, queryParams = {}) {
     container.innerHTML = '<div class="loading-spinner">Loading Dashboard...</div>';
 
     const [developers, availabilities] = await Promise.all([
@@ -80,6 +80,16 @@ export async function renderDashboard(container, pi) {
     };
 
     const render = (filterTeam, filterSprint) => {
+        // Update URL without reloading
+        const params = new URLSearchParams();
+        if (filterTeam !== 'All') params.set('team', filterTeam);
+        if (filterSprint !== 'All') params.set('sprint', filterSprint);
+
+        const newHash = `#${pi}/dashboard${params.toString() ? '?' + params.toString() : ''}`;
+        if (window.location.hash !== newHash) {
+            history.replaceState(null, null, newHash);
+        }
+
         let html = `
             <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
                 <label for="team-filter">Team:</label>
@@ -151,7 +161,10 @@ export async function renderDashboard(container, pi) {
         });
     };
 
-    render('All', 'All');
+    // Initial Render with params
+    const initialTeam = queryParams.team || 'All';
+    const initialSprint = queryParams.sprint || 'All';
+    render(initialTeam, initialSprint);
 }
 
 function renderTableBody(sprints, developers, attrField, getSprintCapacity, getDevAttrs, filterTeam, getDevTeam) {

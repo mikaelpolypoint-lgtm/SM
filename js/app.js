@@ -26,7 +26,18 @@ function init() {
 }
 
 function handleRoute() {
-    const hash = window.location.hash.slice(1); // Remove #
+    let hash = window.location.hash.slice(1); // Remove #
+    let queryParams = {};
+
+    // Parse Query Params
+    if (hash.includes('?')) {
+        const [path, query] = hash.split('?');
+        hash = path;
+        const params = new URLSearchParams(query);
+        for (const [key, value] of params.entries()) {
+            queryParams[key] = value;
+        }
+    }
 
     // Check for global pages first
     if (hash === 'improvements') {
@@ -59,7 +70,7 @@ function handleRoute() {
     title.textContent = `${pi} ${capitalize(page)}`;
 
     // Execute Render Function
-    routes[page](container, pi);
+    routes[page](container, pi, queryParams);
 }
 
 function handlePiChange(e) {

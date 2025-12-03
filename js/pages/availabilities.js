@@ -1,6 +1,6 @@
 import { dataService } from '../data.js';
 
-export async function renderAvailabilities(container, pi) {
+export async function renderAvailabilities(container, pi, queryParams = {}) {
     container.innerHTML = '<div class="loading-spinner">Loading Availabilities...</div>';
 
     // Ensure defaults exist
@@ -48,6 +48,18 @@ export async function renderAvailabilities(container, pi) {
     });
 
     const render = (filterTeam, filterSprint, filterWeekday, filterKw) => {
+        // Update URL
+        const params = new URLSearchParams();
+        if (filterTeam !== 'All') params.set('team', filterTeam);
+        if (filterSprint !== 'All') params.set('sprint', filterSprint);
+        if (filterWeekday !== 'All') params.set('weekday', filterWeekday);
+        if (filterKw !== 'All') params.set('kw', filterKw);
+
+        const newHash = `#${pi}/availabilities${params.toString() ? '?' + params.toString() : ''}`;
+        if (window.location.hash !== newHash) {
+            history.replaceState(null, null, newHash);
+        }
+
         const filteredDevs = filterTeam === 'All' ? developers : developers.filter(d => d.team === filterTeam);
 
         // Filter rows
@@ -157,7 +169,12 @@ export async function renderAvailabilities(container, pi) {
         });
     };
 
-    render('All', 'All', 'All', 'All');
+    const initialTeam = queryParams.team || 'All';
+    const initialSprint = queryParams.sprint || 'All';
+    const initialWeekday = queryParams.weekday || 'All';
+    const initialKw = queryParams.kw || 'All';
+
+    render(initialTeam, initialSprint, initialWeekday, initialKw);
 }
 
 function getWeekday(dateStr) {

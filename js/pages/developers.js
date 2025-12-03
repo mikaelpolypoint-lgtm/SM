@@ -1,6 +1,6 @@
 import { dataService } from '../data.js';
 
-export async function renderDevelopers(container, pi) {
+export async function renderDevelopers(container, pi, queryParams = {}) {
     container.innerHTML = '<div class="loading-spinner">Loading Developers...</div>';
 
     await dataService.ensureDefaults(pi);
@@ -14,6 +14,15 @@ export async function renderDevelopers(container, pi) {
     const teams = ['All', ...new Set(developers.map(d => d.team).filter(Boolean))];
 
     const render = (filterTeam) => {
+        // Update URL
+        const params = new URLSearchParams();
+        if (filterTeam !== 'All') params.set('team', filterTeam);
+
+        const newHash = `#${pi}/developers${params.toString() ? '?' + params.toString() : ''}`;
+        if (window.location.hash !== newHash) {
+            history.replaceState(null, null, newHash);
+        }
+
         const filteredDevs = filterTeam === 'All' ? developers : developers.filter(d => d.team === filterTeam);
 
         const html = `
@@ -130,7 +139,8 @@ export async function renderDevelopers(container, pi) {
         });
     };
 
-    render('All');
+    const initialTeam = queryParams.team || 'All';
+    render(initialTeam);
 }
 
 function renderRow(dev) {
