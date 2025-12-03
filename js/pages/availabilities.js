@@ -292,90 +292,111 @@ function handleImport(e, pi, developers, availabilities) {
     const file = e.target.files[0];
     if (!file) return;
 
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async function (results) {
-            const data = results.data;
-            let updatedCount = 0;
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const text = event.target.result;
+        // Detect delimiter: if first line has ';', assume semicolon.
+        const firstLine = text.split('\n')[0];
+        const delimiter = firstLine.includes(';') ? ';' : ',';
 
-            // Helper to parse value
-            const parseVal = (val) => {
-                if (!val) return 0;
-                const s = val.toString().trim();
-                if (s === '1') return 1;
-                if (s.includes('0.5')) return 0.5;
-                return 0;
-            };
+        Papa.parse(text, {
+            header: true,
+            delimiter: delimiter, // Explicitly set delimiter
+            skipEmptyLines: true,
+            complete: async function (results) {
+                const data = results.data;
+                let updatedCount = 0;
 
-            // Helper to parse date (DD.MM.YYYY or DD.MM.YY -> YYYY-MM-DD)
-            const parseDate = (dateStr) => {
-                if (!dateStr) return null;
-                const parts = dateStr.split('.');
-                if (parts.length === 3) {
-                    const d = parts[0].padStart(2, '0');
-                    const m = parts[1].padStart(2, '0');
-                    let y = parts[2];
+                // Helper to parse value
+                const parseVal = (val) => {
+                    if (!val) return 0;
+                    const s = val.toString().trim().toLowerCase();
+                    if (s === '1') return 1;
+                    if (s.includes('0.5')) return 0.5;
+                    // Handle 'x', 'h', 'vu', 'c', 'p' as 0? Or specific values?
+                    // User's CSV has 'x', 'vu', 'c', 'h', 'p'.
+                    // Assuming these mean "Unavailable" or "Holiday" -> 0.
+                    // If user wants to track them differently, we need more logic.
+                    // For now, anything not 1 or 0.5 is 0.
+                    return 0;
+                };
 
-                    // Handle 2 digit year
-                    if (y.length === 2) {
-                        y = '20' + y;
+                // Helper to parse date (DD.MM.YYYY or DD.MM.YY -> YYYY-MM-DD)
+                const parseDate = (dateStr) => {
+                    if (!dateStr) return null;
+                    const parts = dateStr.split('.');
+                    if (parts.length === 3) {
+                        const d = parts[0].padStart(2, '0');
+                        const m = parts[1].padStart(2, '0');
+                        let y = parts[2];
+
+                        // Handle 2 digit year
+                        if (y.length === 2) {
+                            y = '20' + y;
+                        }
+
+                        return `${y}-${m}-${d}`;
+                    }
+                    return dateStr; // Fallback
+                };
+
+                // Clean keys (remove BOM, trim)
+                const cleanData = data.map(row => {
+                    const newRow = {};
+                    Object.keys(row).forEach(k => {
+                        const cleanKey = k.trim().replace(/^\uFEFF/, '');
+                        newRow[cleanKey] = row[k];
+                    });
+                    return newRow;
+                });
+
+                cleanData.forEach(csvRow => {
+                    // Find date column
+                    let dateKey = Object.keys(csvRow).find(k => k.toUpperCase() === 'DATUM' || k.toUpperCase() === 'DATE');
+
+                    if (!dateKey) {
+                        // Fallback: check if any value looks like DD.MM.YYYY or DD.MM.YY
+                        dateKey = Object.keys(csvRow).find(k => /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(csvRow[k]));
                     }
 
-                    return `${y}-${m}-${d}`;
+                    if (!dateKey) return;
+
+                    const csvDate = parseDate(csvRow[dateKey]);
+                    if (!csvDate) return;
+
+                    // Find matching row in availabilities
+                    const targetRow = availabilities.find(r => r.date === csvDate);
+                    if (targetRow) {
+                        updatedCount++;
+                        // Update developers
+                        developers.forEach(dev => {
+                            // Find a matching key in the CSV row
+                            // Check for exact match or 3-letter match
+                            const csvKey = Object.keys(csvRow).find(k => {
+                                const cleanK = k.trim().toUpperCase();
+                                const devK = dev.key.toUpperCase();
+                                return cleanK === devK || cleanK.substring(0, 3) === devK;
+                            });
+
+                            if (csvKey && csvRow[csvKey] !== undefined) {
+                                targetRow[dev.key] = parseVal(csvRow[csvKey]);
+                            }
+                        });
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    if (confirm(`Updated ${updatedCount} days from CSV. Save changes?`)) {
+                        await dataService.saveAvailability(pi, availabilities);
+                        // Reload page to show changes
+                        const container = document.getElementById('page-container');
+                        renderAvailabilities(container, pi);
+                    }
+                } else {
+                    alert('No matching dates found in CSV for this PI.');
                 }
-                return dateStr; // Fallback
-            };
-
-            data.forEach(csvRow => {
-                // Find date column (DATUM, Datum, Date, or just the first column?)
-                // User said "Column 1".
-                // Let's try to find a key that looks like a date or is named DATUM
-                let dateKey = Object.keys(csvRow).find(k => k.toUpperCase() === 'DATUM' || k.toUpperCase() === 'DATE');
-
-                // If not found by name, assume first key if it looks like a date?
-                // But header:true makes keys unpredictable order technically, but usually safe.
-                if (!dateKey) {
-                    // Fallback: check if any value looks like DD.MM.YYYY or DD.MM.YY
-                    dateKey = Object.keys(csvRow).find(k => /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(csvRow[k]));
-                }
-
-                if (!dateKey) return; // Skip if no date found
-
-                const csvDate = parseDate(csvRow[dateKey]);
-                if (!csvDate) return;
-
-                // Find matching row in availabilities
-                const targetRow = availabilities.find(r => r.date === csvDate);
-                if (targetRow) {
-                    updatedCount++;
-                    // Update developers
-                    developers.forEach(dev => {
-                        // Check if dev key exists in CSV
-                        // User said: "If the key has more than 3 letters... use only the first three letters"
-                        // So we need to find a column in CSV that *starts with* the dev key (assuming dev key is 3 chars).
-                        // Or rather, we check if any CSV key, when truncated to 3 chars, matches the dev key.
-
-                        // Find a matching key in the CSV row
-                        const csvKey = Object.keys(csvRow).find(k => k.trim().substring(0, 3).toUpperCase() === dev.key.toUpperCase());
-
-                        if (csvKey && csvRow[csvKey] !== undefined) {
-                            targetRow[dev.key] = parseVal(csvRow[csvKey]);
-                        }
-                    });
-                }
-            });
-
-            if (updatedCount > 0) {
-                if (confirm(`Updated ${updatedCount} days from CSV. Save changes?`)) {
-                    await dataService.saveAvailability(pi, availabilities);
-                    // Reload page to show changes
-                    const container = document.getElementById('page-container');
-                    renderAvailabilities(container, pi);
-                }
-            } else {
-                alert('No matching dates found in CSV for this PI.');
             }
-        }
-    });
+        });
+    };
+    reader.readAsText(file);
 }
