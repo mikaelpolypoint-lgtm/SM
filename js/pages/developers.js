@@ -121,6 +121,12 @@ export async function renderDevelopers(container, pi) {
                     dataService.deleteDeveloper(pi, key).then(() => renderDevelopers(container, pi));
                 }
             }
+
+            if (e.target.classList.contains('sprint-teams-btn')) {
+                const key = e.target.dataset.key;
+                const dev = developers.find(d => d.key === key);
+                if (dev) openSprintTeamsModal(dev, pi, teams);
+            }
         });
     };
 
@@ -143,7 +149,12 @@ function renderRow(dev) {
 
     return `
         <tr data-key="${dev.key || ''}">
-            <td><button class="btn btn-secondary delete-btn" style="padding: 0.2rem 0.5rem; color: var(--danger); border-color: var(--danger);" data-key="${dev.key}">×</button></td>
+            <td>
+                <div style="display: flex; gap: 0.2rem;">
+                    <button class="btn btn-secondary delete-btn" style="padding: 0.2rem 0.5rem; color: var(--danger); border-color: var(--danger);" data-key="${dev.key}">×</button>
+                    <button class="btn btn-secondary sprint-teams-btn" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;" data-key="${dev.key}">Sprints</button>
+                </div>
+            </td>
             <td>
                 <select name="team" class="dev-input">
                     <option value="Neon" ${dev.team === 'Neon' ? 'selected' : ''}>Neon</option>
@@ -203,6 +214,7 @@ async function handleInputChange(input, pi) {
         developRatio: row.querySelector('input[name="developRatio"]').value,
         maintainRatio: row.querySelector('input[name="maintainRatio"]').value,
         velocity: row.querySelector('input[name="velocity"]').value,
+        sprintTeams: JSON.parse(row.dataset.sprintTeams || '{}') // Preserve sprintTeams
     };
 
     // await dataService.saveDeveloper(pi, dev); // Removed auto-save
@@ -221,7 +233,9 @@ async function handleInputChange(input, pi) {
 
     // Update the delete button key
     row.querySelector('.delete-btn').dataset.key = key;
+    row.querySelector('.sprint-teams-btn').dataset.key = key;
     row.dataset.key = key;
+    row.dataset.sprintTeams = JSON.stringify(dev.sprintTeams || {});
 
     // Mark as modified
     row.classList.add('modified');
@@ -253,6 +267,7 @@ async function saveAllChanges(pi) {
                 developRatio: row.querySelector('input[name="developRatio"]').value,
                 maintainRatio: row.querySelector('input[name="maintainRatio"]').value,
                 velocity: row.querySelector('input[name="velocity"]').value,
+                sprintTeams: JSON.parse(row.dataset.sprintTeams || '{}')
             };
             promises.push(dataService.saveDeveloper(pi, dev));
         });
@@ -365,4 +380,86 @@ function importDevelopersCSV(e, pi, container) {
             }
         }
     });
+}
+async function openSprintTeamsModal(dev, pi, teams) {
+    // Fetch sprints from availabilities to ensure we have the list
+    const availabilities = await dataService.getAvailabilities(pi);
+    const sprints = [...new Set(availabilities.map(a => a.sprint).filter(Boolean))].sort();
+
+    if (sprints.length === 0) {
+        alert("No sprints found. Please ensure availabilities are loaded.");
+        return;
+    }
+
+    // Create Modal HTML
+    const modalId = 'sprint-teams-modal';
+    let modal = document.getElementById(modalId);
+    if (modal) modal.remove();
+
+    const sprintTeams = dev.sprintTeams || {};
+
+    const modalHtml = `
+        <div id="${modalId}" class="modal" style="display: flex;">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>Manage Sprint Teams for ${dev.key}</h3>
+                <p class="text-secondary" style="margin-bottom: 1rem;">Assign specific teams for each sprint. Default is <strong>${dev.team}</strong>.</p>
+                
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${sprints.map(sprint => {
+        const currentTeam = sprintTeams[sprint] || dev.team;
+        return `
+                            <div class="form-group" style="margin-bottom: 0.5rem;">
+                                <label style="display: flex; justify-content: space-between; align-items: center;">
+                                    ${sprint}
+                                    <select class="sprint-team-select" data-sprint="${sprint}" style="width: 60%;">
+                                        ${teams.map(t => `<option value="${t}" ${t === currentTeam ? 'selected' : ''}>${t}</option>`).join('')}
+                                    </select>
+                                </label>
+                            </div>
+                        `;
+    }).join('')}
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button class="btn btn-primary" id="save-sprint-teams-btn">Save Assignments</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    modal = document.getElementById(modalId);
+
+    // Close handlers
+    const close = () => modal.remove();
+    modal.querySelector('.close-modal').onclick = close;
+    modal.querySelector('.close-modal-btn').onclick = close;
+    window.onclick = (e) => { if (e.target === modal) close(); };
+
+    // Save handler
+    document.getElementById('save-sprint-teams-btn').onclick = () => {
+        const newSprintTeams = {};
+        modal.querySelectorAll('.sprint-team-select').forEach(select => {
+            const sprint = select.dataset.sprint;
+            const team = select.value;
+            // Only save if different from default team to save space/complexity? 
+            // Or save explicit assignment always? Explicit is safer.
+            newSprintTeams[sprint] = team;
+        });
+
+        // Update dev object in memory (and DOM data attribute)
+        dev.sprintTeams = newSprintTeams;
+
+        // Find row and update data attribute and mark modified
+        const row = document.querySelector(`tr[data-key="${dev.key}"]`);
+        if (row) {
+            row.dataset.sprintTeams = JSON.stringify(newSprintTeams);
+            row.classList.add('modified');
+            document.getElementById('save-changes-btn').style.display = 'inline-block';
+        }
+
+        close();
+    };
 }

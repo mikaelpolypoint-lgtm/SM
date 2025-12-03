@@ -71,6 +71,14 @@ export async function renderDashboard(container, pi) {
     // Sprints for Filter
     const sprintNames = ['All', ...sprints.map(s => s.name)];
 
+    // Helper to get Dev Team for a specific sprint
+    const getDevTeam = (dev, sprintName) => {
+        if (dev.sprintTeams && dev.sprintTeams[sprintName]) {
+            return dev.sprintTeams[sprintName];
+        }
+        return dev.team;
+    };
+
     const render = (filterTeam, filterSprint) => {
         let html = `
             <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
@@ -87,8 +95,15 @@ export async function renderDashboard(container, pi) {
             <div class="dashboard-grid" style="display: block;">
         `;
 
-        const filteredDevs = filterTeam === 'All' ? developers : developers.filter(d => d.team === filterTeam);
         const filteredSprints = filterSprint === 'All' ? sprints : sprints.filter(s => s.name === filterSprint);
+
+        // Filter Developers: Include if they are in the filtered team for ANY of the visible sprints
+        // If filterTeam is All, include all.
+        // If filterTeam is specific, include dev if getDevTeam(dev, sprint) === filterTeam for any visible sprint.
+        const filteredDevs = developers.filter(d => {
+            if (filterTeam === 'All') return true;
+            return filteredSprints.some(s => getDevTeam(d, s.name) === filterTeam);
+        });
 
         tables.forEach(tableConfig => {
             html += `
@@ -107,7 +122,7 @@ export async function renderDashboard(container, pi) {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${renderTableBody(filteredSprints, filteredDevs, tableConfig.field, getSprintCapacity, getDevAttrs)}
+                                ${renderTableBody(filteredSprints, filteredDevs, tableConfig.field, getSprintCapacity, getDevAttrs, filterTeam, getDevTeam)}
                             </tbody>
                         </table>
                     </div>
@@ -131,7 +146,7 @@ export async function renderDashboard(container, pi) {
             btn.addEventListener('click', () => {
                 const field = btn.dataset.field;
                 const title = btn.dataset.title;
-                exportDashboardTable(title, field, filteredSprints, filteredDevs, getSprintCapacity, getDevAttrs);
+                exportDashboardTable(title, field, filteredSprints, filteredDevs, getSprintCapacity, getDevAttrs, filterTeam, getDevTeam);
             });
         });
     };
@@ -139,7 +154,7 @@ export async function renderDashboard(container, pi) {
     render('All', 'All');
 }
 
-function renderTableBody(sprints, developers, attrField, getSprintCapacity, getDevAttrs) {
+function renderTableBody(sprints, developers, attrField, getSprintCapacity, getDevAttrs, filterTeam, getDevTeam) {
     const format = (n) => attrField === 'dailySP' ? n.toFixed(1) : Math.round(n);
 
     let rowsHtml = '';
@@ -165,15 +180,30 @@ function renderTableBody(sprints, developers, attrField, getSprintCapacity, getD
             const attrs = getDevAttrs(dev);
             const val = capacityDays * attrs[attrField];
 
-            devTotals[dev.key] += val;
-            if (!isIpSprint) devTotalsNoIP[dev.key] += val;
+            // Check if dev belongs to the filtered team in this sprint
+            // If filterTeam is 'All', we include everyone.
+            // If filterTeam is specific, we only include if getDevTeam matches.
+            // BUT, filteredDevs already includes devs who match AT LEAST ONE sprint.
+            // So for a specific sprint row, if the dev is NOT in the team, we should probably show 0 or empty?
 
-            if (!dev.specialCase) {
-                rowTotal += val;
+            const devTeamInSprint = getDevTeam(dev, sprint.name);
+            const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;
+
+            if (isMember) {
+                devTotals[dev.key] += val;
+                if (!isIpSprint) devTotalsNoIP[dev.key] += val;
+
+                if (!dev.specialCase) {
+                    rowTotal += val;
+                }
             }
 
             const style = dev.specialCase ? 'color: var(--danger); font-weight: bold;' : '';
-            rowHtml += `<td style="${style}">${format(val)}</td>`;
+            // If not member in this sprint, show empty or 0 with low opacity?
+            // Let's show empty to be clear they are not in the team.
+            const displayVal = isMember ? format(val) : '<span style="color: var(--text-secondary); opacity: 0.3;">-</span>';
+
+            rowHtml += `<td style="${style}">${displayVal}</td>`;
         });
 
         rowHtml += `<td><strong>${format(rowTotal)}</strong></td></tr>`;
@@ -207,7 +237,7 @@ function renderTableBody(sprints, developers, attrField, getSprintCapacity, getD
     return rowsHtml + totalRow + noIpRow;
 }
 
-function exportDashboardTable(title, field, sprints, developers, getSprintCapacity, getDevAttrs) {
+function exportDashboardTable(title, field, sprints, developers, getSprintCapacity, getDevAttrs, filterTeam, getDevTeam) {
     const format = (n) => field === 'dailySP' ? n.toFixed(1) : Math.round(n);
 
     // Prepare Data
@@ -234,12 +264,17 @@ function exportDashboardTable(title, field, sprints, developers, getSprintCapaci
             const attrs = getDevAttrs(dev);
             const val = capacityDays * attrs[field];
 
-            devTotals[dev.key] += val;
-            if (!isIpSprint) devTotalsNoIP[dev.key] += val;
+            const devTeamInSprint = getDevTeam(dev, sprint.name);
+            const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;
 
-            if (!dev.specialCase) rowTotal += val;
+            if (isMember) {
+                devTotals[dev.key] += val;
+                if (!isIpSprint) devTotalsNoIP[dev.key] += val;
 
-            row[dev.key] = format(val);
+                if (!dev.specialCase) rowTotal += val;
+            }
+
+            row[dev.key] = isMember ? format(val) : '';
         });
         row['Total'] = format(rowTotal);
         csvData.push(row);
